@@ -1,16 +1,7 @@
 <?php
 
-header("Content-Type: application/json; charset=utf-8");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-
-if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
-    http_response_code(200);
-    exit;
-}
-
-require_once '../db/connection.php';
+// Base: CORS, sessão, funções de resposta e conexão ($pdo)
+require_once __DIR__ . '/../includes/base.php';
 
 try {
 
@@ -93,4 +84,4 @@ try {
     http_response_code(500);
     echo json_encode(["sucesso" => false, "erro" => "Erro no banco de dados"]);
     error_log("Erro PDO em ecopontos.php: " . $e->getMessage());
-}
+}

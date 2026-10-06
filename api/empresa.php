@@ -1,16 +1,7 @@
 <?php
 
-header("Content-Type: application/json; charset=utf-8");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-
-if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
-    http_response_code(200);
-    exit;
-}
-
-require_once '../db/connection.php';
+// Base: CORS, sessão, funções de resposta e conexão ($pdo)
+require_once __DIR__ . '/../includes/base.php';
 
 try {
 
@@ -18,7 +9,7 @@ try {
 
     if ($metodo === "GET") {
         if (isset($_GET["id"])) {
-            $stmt = $pdo->prepare("SELECT * FROM empresa WHERE empre_id = ?");
+            $stmt = $pdo->prepare("SELECT empre_id, name, email, colected, cnpj, logo, phone, contact, adress FROM empresa WHERE empre_id = ?");
             $stmt->execute([$_GET["id"]]);
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -30,7 +21,7 @@ try {
 
             echo json_encode(["sucesso" => true, "dados" => $resultado]);
         } else {
-            $stmt = $pdo->query("SELECT * FROM empresa");
+            $stmt = $pdo->query("SELECT empre_id, name, email, colected, cnpj, logo, phone, contact, adress FROM empresa");
             $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode(["sucesso" => true, "dados" => $resultado]);
         }
@@ -49,8 +40,9 @@ try {
         $stmt = $pdo->prepare("INSERT INTO empresa (name, email, password, colected, cnpj, logo, phone, contact, adress) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $dados["name"] ?? "",
-            $dados["email"],
-            $dados["password"] ?? null,
+            mb_strtolower(trim($dados["email"]), "UTF-8"),
+            // senha criptografada (nunca em texto puro)
+            !empty($dados["password"]) ? password_hash($dados["password"], PASSWORD_DEFAULT) : null,
             $dados["colected"] ?? 0,
             $dados["cnpj"],
             $dados["logo"] ?? null,

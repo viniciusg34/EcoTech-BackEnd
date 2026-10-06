@@ -1,0 +1,4 @@
+db/config.php
+db/ca.pem
+*.log
+ferramentas/resultado_banco.txt
