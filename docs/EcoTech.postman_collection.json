@@ -1,0 +1,2832 @@
+{
+  "info": {
+    "name": "EcoTech API v1",
+    "description": "Coleção gerada junto com docs/openapi.yaml. Ajuste a variável base_url. Ordem sugerida: Autenticação > Login pessoa > 2FA (o token é guardado sozinho), depois Empresa e Ecoponto. Login da empresa de exemplo: contato@costaverde.ecotech.example / Ecotech2026 (SEED_EMPRESA_PASSWORD).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Públicas",
+      "item": [
+        {
+          "name": "GET /estatisticas — Números públicos da página inicial e do Sobre nós",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/estatisticas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "estatisticas"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Total reciclado (kg e toneladas), pessoas ativas, Ecopontos e empresas parceiras. Guardado em cache por 5 minutos."
+          }
+        },
+        {
+          "name": "GET /config — Configurações públicas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "config"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Moedas e kg do check-in, espera entre check-ins (horas), janela de duplicidade das leituras (horas) e duração da sessão no Ecoponto (minutos). Vêm da tabela `configuracao`."
+          }
+        },
+        {
+          "name": "GET /categorias — Categorias de material",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Rótulo, cor, ícone, unidade e moedas por unidade de cada material."
+          }
+        },
+        {
+          "name": "GET /recompensas — Recompensas ativas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/recompensas?cat=food",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "recompensas"
+              ],
+              "query": [
+                {
+                  "key": "cat",
+                  "value": "food"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Lista paginada das recompensas ativas. `cat` ausente ou `todos` traz todas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.data && j.data.length) pm.collectionVariables.set('recompensa_id', j.data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /ecopontos — Ecopontos do mapa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos?pagina=1&por_pagina=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                },
+                {
+                  "key": "por_pagina",
+                  "value": "2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Lista paginada. O front pede `por_pagina=100` e junta as páginas até `meta.total`. Nunca devolve o segredo do QR."
+          }
+        },
+        {
+          "name": "GET /ecopontos/{ecoponto} — Um Ecoponto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/{{ecoponto_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "{{ecoponto_id}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Aceita o id (`3`) ou o código (`ECO-01`)."
+          }
+        },
+        {
+          "name": "GET /cep/{cep} — Endereço pelo CEP (ViaCEP)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cep/20040020",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cep",
+                "20040020"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Consulta o ViaCEP no servidor, com cache de 7 dias. CEP com 8 dígitos (com ou sem hífen). 503 `cep_indisponivel` se o ViaCEP estiver fora do ar."
+          }
+        },
+        {
+          "name": "POST /pessoas — Cadastro de pessoa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pessoas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pessoas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Ana Maria da Silva\",\n  \"email\": \"ana.silva@exemplo.com\",\n  \"cpf\": \"12345678909\",\n  \"login\": \"anamar\",\n  \"senha\": \"Reciclar1\",\n  \"nome_mae\": \"Maria José da Silva\",\n  \"nascimento\": \"1990-05-12\",\n  \"sexo\": \"feminino\",\n  \"telefone_celular\": \"21999991234\",\n  \"telefone_fixo\": \"2133331234\",\n  \"cep\": \"20040020\",\n  \"logradouro\": \"Rua da Assembleia\",\n  \"numero\": \"10\",\n  \"bairro\": \"Centro\",\n  \"cidade\": \"Rio de Janeiro\",\n  \"uf\": \"RJ\",\n  \"termos_aceitos\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Regras: nome de 15 a 80 caracteres; CPF com dígitos verificadores; login de exatamente 6 letras; senha forte: 8+ caracteres com maiúscula, minúscula e número (`SENHA_REGRA=forte`, o padrão; `SENHA_REGRA=enunciado` = exatamente 8 letras); celular com DDD (11 dígitos) e fixo com DDD (10 dígitos, opcional); CEP de 8 dígitos; UF de 2 letras; `termos_aceitos` = true. CPF, CEP e telefones podem vir com ou sem máscara. Não devolve token: a pessoa entra pelo login (com 2FA)."
+          }
+        },
+        {
+          "name": "POST /empresas — Cadastro de empresa parceira",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empresas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"11444777000161\",\n  \"nome_empresa\": \"Verde Vivo Reciclagem\",\n  \"razao_social\": \"Verde Vivo Reciclagem Ltda\",\n  \"email\": \"contato@verdevivo.exemplo.com\",\n  \"senha\": \"Verde2026\",\n  \"endereco\": \"Av. Brasil, 500 - Rio de Janeiro/RJ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "CNPJ com dígitos verificadores, e-mail único (também entre as pessoas) e senha forte (8+ caracteres com maiúscula, minúscula e número)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "POST /auth/login — Login (1ª etapa) — Pessoa: senha certa, pede a pergunta (2FA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"anamar\",\n  \"senha\": \"Reciclar1\",\n  \"lembrar\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Envie `email` **ou** `login` e a `senha` (`lembrar` = true deixa o token valer 30 dias em vez de 8 horas). Pessoa (comum ou master) recebe a pergunta de segurança (`status: \"2fa\"`); empresa recebe o token direto."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.desafio_id) pm.collectionVariables.set('desafio_id', j.desafio_id);",
+                  "if (j.token && j.usuario && j.usuario.tipo === 'empresa') pm.collectionVariables.set('token_empresa', j.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login — Login (1ª etapa) — Empresa: entra direto (sem 2FA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"contato@costaverde.ecotech.example\",\n  \"senha\": \"Ecotech2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Envie `email` **ou** `login` e a `senha` (`lembrar` = true deixa o token valer 30 dias em vez de 8 horas). Pessoa (comum ou master) recebe a pergunta de segurança (`status: \"2fa\"`); empresa recebe o token direto."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.desafio_id) pm.collectionVariables.set('desafio_id', j.desafio_id);",
+                  "if (j.token && j.usuario && j.usuario.tipo === 'empresa') pm.collectionVariables.set('token_empresa', j.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/2fa — Login (2ª etapa): resposta da pergunta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/2fa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "2fa"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"desafio_id\": \"{{desafio_id}}\",\n  \"resposta\": \"maria jose da silva\",\n  \"lembrar\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Compara no servidor: nome da mãe sem acento e sem diferença de maiúsculas; data dd/mm/aaaa (ou aaaa-mm-dd); CEP só com os dígitos. Até 3 tentativas em 5 minutos; na 3ª errada o desafio é bloqueado (423, mensagem do enunciado). Desafio vencido: 410. Toda tentativa entra no log de autenticação."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.token) pm.collectionVariables.set(j.usuario.perfil === 'master' ? 'token_master' : 'token_pessoa', j.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/google — Login com Google",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/google",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credential\": \"token-google-da-ana\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Recebe o `credential` (ID token) do Google Identity Services e confere no servidor (público-alvo = `GOOGLE_CLIENT_ID`, emissor, validade e e-mail verificado). Se a pessoa existe, segue para a pergunta de segurança (2FA); se não, devolve `cadastro_pendente` com nome e e-mail para completar o cadastro."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.desafio_id) pm.collectionVariables.set('desafio_id', j.desafio_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/esqueci-senha — Recuperar senha (1/3): pergunta de segurança",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/esqueci-senha",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "esqueci-senha"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ana.silva@exemplo.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Sempre responde com um desafio, exista ou não o e-mail (para não revelar quem tem conta). Para e-mail desconhecido a pergunta é falsa, mas sempre a mesma, e a verificação falha como se fosse real."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.desafio_id) pm.collectionVariables.set('desafio_recuperacao', j.desafio_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/esqueci-senha/verificar — Recuperar senha (2/3): responder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/esqueci-senha/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "esqueci-senha",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"desafio_id\": \"{{desafio_recuperacao}}\",\n  \"resposta\": \"maria jose da silva\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Mesmas regras do 2FA (3 tentativas, 5 minutos). Resposta certa devolve um token de troca que vale 10 minutos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.token) pm.collectionVariables.set('token_reset', j.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/redefinir-senha — Recuperar senha (3/3): nova senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/redefinir-senha",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "redefinir-senha"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token_reset}}\",\n  \"nova_senha\": \"natureza\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "O token só pode ser usado uma vez. Todos os tokens de acesso da pessoa são revogados."
+          }
+        },
+        {
+          "name": "POST /auth/logout — Sair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Revoga o token usado na chamada."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pessoa",
+      "item": [
+        {
+          "name": "GET /me — Meu perfil, saldo, nível e impacto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "`nivel.subiu` vem `true` só na primeira leitura depois que a pessoa sobe de nível (para o confete). Níveis: Iniciante Verde 0, Reciclador Prata 500, Guardião Verde 1500, Mestre Eco 3000."
+          }
+        },
+        {
+          "name": "PUT /me — Atualizar meu perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Ana Maria da Silva Souza\",\n  \"email\": \"ana.silva@exemplo.com\",\n  \"avatar_url\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Campos aceitos: `nome`, `email` e `avatar_url` (envie só os que mudam). Devolve o mesmo objeto de `GET /me`."
+          }
+        },
+        {
+          "name": "DELETE /me — Excluir minha conta (anonimiza)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "LGPD: apaga os dados pessoais e mantém o histórico (coletas e moedas) sem identificar a pessoa. Revoga os tokens. O master não pode se excluir."
+          }
+        },
+        {
+          "name": "PUT /me/senha — Trocar minha senha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/senha",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "senha"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senha_atual\": \"Reciclar1\",\n  \"nova_senha\": \"Ecologia1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Só para usuário comum (regra do enunciado). Revoga os outros tokens da pessoa."
+          }
+        },
+        {
+          "name": "GET /me/coins — Meu saldo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/coins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "coins"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Chamado a cada 5 segundos enquanto a sessão no Ecoponto está ativa."
+          }
+        },
+        {
+          "name": "GET /me/movimentos — Extrato de moedas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/movimentos?pagina=1&por_pagina=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "movimentos"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                },
+                {
+                  "key": "por_pagina",
+                  "value": "20"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Linha do tempo do livro-razão, da mais recente para a mais antiga, já com título, subtítulo, ícone, valor com sinal e data formatada."
+          }
+        },
+        {
+          "name": "GET /me/coletas — Minhas coletas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/coletas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "coletas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Check-ins e entregas, da mais recente para a mais antiga."
+          }
+        },
+        {
+          "name": "GET /me/resgates — Meus resgates (cupons)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/resgates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "resgates"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Resgates com o código do cupom."
+          }
+        },
+        {
+          "name": "GET /me/sessao — Estou conectado a um Ecoponto?",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/sessao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "sessao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Sessão ativa da pessoa. 404 `sem_sessao` se não houver."
+          }
+        },
+        {
+          "name": "DELETE /me/sessao — Sair do Ecoponto",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/sessao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "sessao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Encerra a sessão ativa da pessoa."
+          }
+        },
+        {
+          "name": "GET /me/preferencias — Minhas preferências",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/preferencias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "preferencias"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Objeto livre (ex.: notificações), antes guardado só no navegador."
+          }
+        },
+        {
+          "name": "PUT /me/preferencias — Salvar minhas preferências",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me/preferencias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me",
+                "preferencias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notificacoes\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Objeto com até 30 chaves (letras minúsculas, números e _) e valores simples (texto até 100 caracteres, número, booleano ou null)."
+          }
+        },
+        {
+          "name": "POST /resgates — Resgatar recompensa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/resgates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "resgates"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recompensa_id\": {{recompensa_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Debita o custo dentro de uma transação, com a linha da pessoa travada (o saldo nunca fica negativo, mesmo com dois cliques ao mesmo tempo). 409 `saldo_insuficiente` ou `sem_estoque`; 404 `recompensa_indisponivel`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ecoponto (sessão e leituras)",
+      "item": [
+        {
+          "name": "POST /ecopontos/conectar — Conectar ao Ecoponto lendo o QR da placa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/conectar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "conectar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qr\": \"{{qr_payload}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Valida a assinatura HMAC do QR. Cria a sessão (dura `sessao_minutos`); se a pessoa já está conectada no mesmo ponto, devolve a mesma sessão. Conectar em outro ponto encerra a sessão anterior. 422 `qr_invalido` (assinatura errada ou ponto inativo) ou `qr_expirado` (QR dinâmico vencido)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.sessao_id) pm.collectionVariables.set('sessao_id', j.sessao_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /checkins — Check-in no Ecoponto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/checkins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "checkins"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessao_id\": {{sessao_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_pessoa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Credita `checkin_coins` moedas e `checkin_kg` kg. Espera mínima de `checkin_cooldown_horas` por pessoa e Ecoponto: 429 `checkin_cooldown` com a mensagem pronta e o cabeçalho Retry-After."
+          }
+        },
+        {
+          "name": "GET /ecopontos/{ecoponto}/qr — Payload assinado do QR da placa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/{{ecoponto_id}}/qr",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "{{ecoponto_id}}",
+                "qr"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Formato: `ECO-01|emp={empresa}|ep={ecoponto}|sig={hmac}` (HMAC-SHA256 com `QR_SECRET` + segredo do ponto). Com `dinamico=1` o payload ganha `exp` e vence em 60 segundos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.payload) pm.collectionVariables.set('qr_payload', j.payload);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /ecopontos/{ecoponto}/qr.svg — Imagem SVG do QR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/{{ecoponto_id}}/qr.svg",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "{{ecoponto_id}}",
+                "qr.svg"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "A mesma informação de `/qr`, já desenhada no servidor (pronta para imprimir a placa)."
+          }
+        },
+        {
+          "name": "GET /ecopontos/{ecoponto}/sessao-ativa — Quem está conectado no Ecoponto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/{{ecoponto_id}}/sessao-ativa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "{{ecoponto_id}}",
+                "sessao-ativa"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Sessão ativa mais recente do ponto, com o nome abreviado da pessoa (sem CPF nem e-mail). 404 `sem_sessao` se ninguém estiver conectado."
+          }
+        },
+        {
+          "name": "DELETE /ecopontos/{ecoponto}/sessao-ativa — Encerrar a sessão do Ecoponto",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/{{ecoponto_id}}/sessao-ativa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "{{ecoponto_id}}",
+                "sessao-ativa"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "A empresa encerra a sessão ativa do ponto."
+          }
+        },
+        {
+          "name": "POST /ecopontos/{ecoponto}/leituras — O Ecoponto lê o código de barras de um reciclável",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/{{ecoponto_id}}/leituras",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "{{ecoponto_id}}",
+                "leituras"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessao_id\": {{sessao_id}},\n  \"code\": \"7896004004778\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Valida o dígito verificador (EAN-8, UPC-A ou EAN-13), consulta o Open Food Facts (timeout de 4 s, cache no catálogo; se a API cair, segue só com o catálogo), confere se o produto participa da campanha e aplica a regra de duplicidade (`duplicidade_horas`). As moedas vão para a pessoa da sessão. Erros: 422 `codigo_invalido`, 404 `produto_fora_da_campanha`, 409 `ja_escaneado`, 410 `sessao_expirada`, 404 `sessao_nao_encontrada`."
+          }
+        },
+        {
+          "name": "POST /coletas — Registrar entrega pesada (por categoria)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/coletas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coletas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessao_id\": {{sessao_id}},\n  \"itens\": [\n    {\n      \"categoria\": \"papel\",\n      \"quantidade\": 2.5\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "A empresa dona do Ecoponto da sessão informa as quantidades por material; o servidor calcula as moedas (`coins_por_unidade` da categoria). O cliente nunca envia moedas. 422 `categoria_nao_aceita` se o ponto não recebe o material."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Empresa",
+      "item": [
+        {
+          "name": "GET /empresas/me — Dados da empresa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empresas/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresas",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Dados da empresa"
+          }
+        },
+        {
+          "name": "PUT /empresas/me — Atualizar dados da empresa",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empresas/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresas",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome_empresa\": \"Recicla Costa Verde\",\n  \"endereco\": \"Mangaratiba - RJ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Campos: `nome_empresa`, `razao_social`, `email`, `endereco`."
+          }
+        },
+        {
+          "name": "PUT /empresas/me/senha — Trocar a senha da empresa",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empresas/me/senha",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresas",
+                "me",
+                "senha"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senha_atual\": \"Ecotech2026\",\n  \"nova_senha\": \"CostaVerde2027\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Senha forte. Revoga os outros tokens da empresa."
+          }
+        },
+        {
+          "name": "GET /empresas/me/dashboard — Painel da empresa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empresas/me/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresas",
+                "me",
+                "dashboard"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Formato pedido pelo front (ajustes 7.1): totais, serie (rótulos curtos, valores formatados e total), categorias com percentual inteiro somando 100 e ecopontos com endereço, categorias, kg do mês e última atividade em texto (\"Hoje, 08h30\"). resumo e serie_mensal continuam vindo."
+          }
+        },
+        {
+          "name": "GET /empresas/me/leituras — Histórico de leituras (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empresas/me/leituras?periodo=mes&por_pagina=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresas",
+                "me",
+                "leituras"
+              ],
+              "query": [
+                {
+                  "key": "periodo",
+                  "value": "mes",
+                  "description": "mes, 3m, 6m ou tudo"
+                },
+                {
+                  "key": "ecoponto_id",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Só um Ecoponto (da própria empresa)"
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "por_pagina",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Leituras dos Ecopontos da empresa, do mais recente para o mais antigo, incluindo as recusadas. Sem nenhum dado de quem reciclou (LGPD). Ecoponto de outra empresa = 403."
+          }
+        },
+        {
+          "name": "GET /empresas/me/ecopontos — Ecopontos da empresa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empresas/me/ecopontos?por_pagina=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresas",
+                "me",
+                "ecopontos"
+              ],
+              "query": [
+                {
+                  "key": "por_pagina",
+                  "value": "2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Ecopontos da empresa"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.data && j.data.length) pm.collectionVariables.set('ecoponto_id', j.data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /ecopontos — Criar Ecoponto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Ecoponto Praia de Muriqui\",\n  \"descricao\": \"Coleta de plástico e metal\",\n  \"endereco\": \"Av. Beira Mar, 100\",\n  \"cidade\": \"Mangaratiba\",\n  \"estado\": \"RJ\",\n  \"lat\": -22.9205,\n  \"lng\": -43.9442,\n  \"categorias\": [\n    \"plastico\",\n    \"metal\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "`codigo` é opcional (o servidor gera o próximo ECO-NN). `categorias` = chaves dos materiais aceitos."
+          }
+        },
+        {
+          "name": "PUT /ecopontos/{ecoponto} — Substituir dados do Ecoponto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/{{ecoponto_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "{{ecoponto_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Ecoponto Praia de Muriqui\",\n  \"descricao\": \"Plástico, metal e vidro\",\n  \"endereco\": \"Av. Beira Mar, 100\",\n  \"cidade\": \"Mangaratiba\",\n  \"estado\": \"RJ\",\n  \"lat\": -22.9205,\n  \"lng\": -43.9442,\n  \"status\": \"ativo\",\n  \"categorias\": [\n    \"plastico\",\n    \"metal\",\n    \"vidro\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Só os Ecopontos da própria empresa (Policy): 403 para os de outra empresa."
+          }
+        },
+        {
+          "name": "PATCH /ecopontos/{ecoponto} — Alterar parte dos dados do Ecoponto",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ecopontos/{{ecoponto_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ecopontos",
+                "{{ecoponto_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"manutencao\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_empresa}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Envie só os campos que mudam. Só os Ecopontos da própria empresa."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Master (admin)",
+      "item": [
+        {
+          "name": "POST /scans — Leitura de teste (só master)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "scans"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"7896004004778\",\n  \"scannedAt\": \"2026-11-16T14:32:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Mantida para testes e para a apresentação: credita na conta do próprio master. No fluxo real quem lê os produtos é o Ecoponto (`POST /ecopontos/{id}/leituras`). Repetir a mesma Idempotency-Key devolve a mesma resposta (cabeçalho `Idempotency-Replayed: true`) sem creditar de novo."
+          }
+        },
+        {
+          "name": "GET /admin/painel — Painel geral",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/painel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "painel"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Mesmo formato do painel da empresa, somando todas as empresas."
+          }
+        },
+        {
+          "name": "GET /admin/pessoas — Consulta de pessoas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/pessoas?busca=silva",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "pessoas"
+              ],
+              "query": [
+                {
+                  "key": "busca",
+                  "value": "silva"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Busca por parte do nome (ou e-mail/login). LGPD: CPF mascarado; nunca devolve nome da mãe, nascimento ou CEP."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.data && j.data.length) pm.collectionVariables.set('pessoa_id', j.data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /admin/pessoas/pdf — PDF da lista de pessoas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/pessoas/pdf?busca=silva",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "pessoas",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "busca",
+                  "value": "silva"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Mesma busca da consulta, em PDF."
+          }
+        },
+        {
+          "name": "DELETE /admin/pessoas/{pessoa} — Excluir pessoa (anonimiza)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/pessoas/{{pessoa_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "pessoas",
+                "{{pessoa_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Anonimiza os dados pessoais e revoga os tokens; o histórico continua. Não exclui usuários master (403); repetir dá 409."
+          }
+        },
+        {
+          "name": "POST /admin/pessoas/{pessoa}/ajustes — Ajuste manual de saldo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/pessoas/{{pessoa_id}}/ajustes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "pessoas",
+                "{{pessoa_id}}",
+                "ajustes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": 100,\n  \"descricao\": \"Bônus de boas-vindas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Lança um movimento `ajuste` (positivo ou negativo) no livro-razão. 409 `saldo_insuficiente` se o saldo ficaria negativo."
+          }
+        },
+        {
+          "name": "GET /admin/logs-autenticacao — Log de autenticação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/logs-autenticacao?tipo=nome&termo=ana&por_pagina=3",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "logs-autenticacao"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "nome"
+                },
+                {
+                  "key": "termo",
+                  "value": "ana"
+                },
+                {
+                  "key": "por_pagina",
+                  "value": "3"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Do mais recente para o mais antigo: data e hora, nome, CPF mascarado, pergunta do 2FA usada, sucesso, IP. Filtro por nome, por CPF ou todos (enunciado)."
+          }
+        },
+        {
+          "name": "GET /admin/recompensas — Recompensas (inclusive inativas)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/recompensas?por_pagina=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "recompensas"
+              ],
+              "query": [
+                {
+                  "key": "por_pagina",
+                  "value": "2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Recompensas (inclusive inativas)"
+          }
+        },
+        {
+          "name": "POST /admin/recompensas — Criar recompensa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/recompensas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "recompensas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria\": \"food\",\n  \"icone\": \"🧃\",\n  \"nome\": \"Suco Natural\",\n  \"descricao\": \"Um suco de 300 ml\",\n  \"custo_coins\": 60,\n  \"estoque\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "`estoque` null = ilimitado."
+          }
+        },
+        {
+          "name": "PUT /admin/recompensas/{recompensa} — Alterar recompensa (PUT ou PATCH)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/recompensas/{{recompensa_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "recompensas",
+                "{{recompensa_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"custo_coins\": 70\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Envie só os campos que mudam."
+          }
+        },
+        {
+          "name": "PATCH /admin/recompensas/{recompensa} — Alterar recompensa (PUT ou PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/recompensas/{{recompensa_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "recompensas",
+                "{{recompensa_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"custo_coins\": 70\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Envie só os campos que mudam."
+          }
+        },
+        {
+          "name": "DELETE /admin/recompensas/{recompensa} — Apagar recompensa",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/recompensas/{{recompensa_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "recompensas",
+                "{{recompensa_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Se já foi resgatada, é desativada em vez de apagada (o histórico continua)."
+          }
+        },
+        {
+          "name": "GET /admin/produtos — Catálogo de produtos da campanha",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/produtos?por_pagina=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "produtos"
+              ],
+              "query": [
+                {
+                  "key": "por_pagina",
+                  "value": "2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Catálogo de produtos da campanha"
+          }
+        },
+        {
+          "name": "POST /admin/produtos — Adicionar produto à campanha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/produtos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "produtos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo_barras\": \"96385074\",\n  \"nome\": \"Garrafinha 300ml\",\n  \"categoria\": \"plastico\",\n  \"coins\": 10,\n  \"icone\": \"🧴\",\n  \"peso_kg\": 0.01\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "O código de barras precisa ter o dígito verificador certo (EAN-8, UPC-A ou EAN-13)."
+          }
+        },
+        {
+          "name": "PUT /admin/produtos/{produto} — Alterar produto (PUT ou PATCH)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/produtos/{{produto_codigo}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "produtos",
+                "{{produto_codigo}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ativo\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "O código de barras não muda."
+          }
+        },
+        {
+          "name": "PATCH /admin/produtos/{produto} — Alterar produto (PUT ou PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/produtos/{{produto_codigo}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "produtos",
+                "{{produto_codigo}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ativo\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "O código de barras não muda."
+          }
+        },
+        {
+          "name": "DELETE /admin/produtos/{produto} — Apagar produto",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/produtos/{{produto_codigo}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "produtos",
+                "{{produto_codigo}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Se já foi lido alguma vez, é desativado em vez de apagado."
+          }
+        },
+        {
+          "name": "GET /admin/empresas — Empresas parceiras",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/empresas?por_pagina=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "empresas"
+              ],
+              "query": [
+                {
+                  "key": "por_pagina",
+                  "value": "2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Empresas parceiras"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.data && j.data.length) pm.collectionVariables.set('empresa_id', j.data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /admin/empresas/{empresa} — Ativar ou suspender empresa",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/empresas/{{empresa_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "empresas",
+                "{{empresa_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"suspensa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_master}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Suspender revoga os tokens da empresa na hora."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "token_pessoa",
+      "value": ""
+    },
+    {
+      "key": "token_empresa",
+      "value": ""
+    },
+    {
+      "key": "token_master",
+      "value": ""
+    },
+    {
+      "key": "desafio_id",
+      "value": ""
+    },
+    {
+      "key": "desafio_recuperacao",
+      "value": ""
+    },
+    {
+      "key": "token_reset",
+      "value": ""
+    },
+    {
+      "key": "qr_payload",
+      "value": ""
+    },
+    {
+      "key": "sessao_id",
+      "value": ""
+    },
+    {
+      "key": "ecoponto_id",
+      "value": "1"
+    },
+    {
+      "key": "recompensa_id",
+      "value": "1"
+    },
+    {
+      "key": "pessoa_id",
+      "value": "2"
+    },
+    {
+      "key": "empresa_id",
+      "value": "1"
+    },
+    {
+      "key": "produto_codigo",
+      "value": "7896004004778"
+    }
+  ]
+}

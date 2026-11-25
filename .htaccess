@@ -1,0 +1,22 @@
+# ─────────────────────────────────────────────────────────────────
+# Proteção para rodar a API dentro do htdocs do XAMPP (Apache)
+#
+# Só a pasta public/ pode ser aberta pelo navegador:
+#   http://localhost/ecotech/backend/public/api/v1/saude   -> funciona
+#   http://localhost/ecotech/backend/.env                  -> 403 (bloqueado)
+#   http://localhost/ecotech/backend/vendor/...            -> 403 (bloqueado)
+#
+# Sem este arquivo, qualquer pessoa na mesma rede poderia baixar o .env
+# (com a senha do banco). Com "php artisan serve" ele não faz diferença.
+# ─────────────────────────────────────────────────────────────────
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !/public/
+    RewriteRule ^ - [F]
+</IfModule>
+
+# Garantia extra (vale mesmo sem o mod_rewrite)
+<FilesMatch "^\.env|^composer\.(json|lock)$|^artisan$|\.(sql|md|xml|yaml|log)$">
+    Require all denied
+</FilesMatch>
