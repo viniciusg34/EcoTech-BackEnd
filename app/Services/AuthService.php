@@ -55,6 +55,9 @@ class AuthService
                 throw new ApiException(403, 'empresa_suspensa', 'Esta empresa está suspensa. Fale com o administrador do EcoTech.');
             }
             $this->registrarLog(null, $empresa, 'senha', true);
+            if (! CodigoEmailService::ativo()) {
+                return $this->emitirToken($empresa, $lembrar);
+            }
             $desafio = $this->codigos->criarOuFalhar($empresa, $empresa->email, 'login', $lembrar);
 
             return $this->codigos->dados($desafio)
@@ -66,7 +69,7 @@ class AuthService
         }
 
         // Cadastro com e-mail ainda não confirmado: manda (de novo) o código de confirmação
-        if (! $pessoa->email_confirmado) {
+        if (! $pessoa->email_confirmado && CodigoEmailService::ativo()) {
             $this->registrarLog($pessoa, null, 'senha', true);
             return $this->pedirConfirmacaoEmail($pessoa);
         }
@@ -95,6 +98,9 @@ class AuthService
         );
 
         $pessoa = $desafio->pessoa;
+        if (! CodigoEmailService::ativo()) {
+            return $this->emitirToken($pessoa, $lembrar ?? $desafio->lembrar);
+        }
         $codigo = $this->codigos->criarOuFalhar($pessoa, $pessoa->email, 'login', $lembrar ?? $desafio->lembrar);
 
         return $this->codigos->dados($codigo)

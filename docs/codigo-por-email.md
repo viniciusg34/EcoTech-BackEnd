@@ -49,6 +49,18 @@ As contas que já existiam no banco ficam como confirmadas (coluna `pessoa.email
 - Se o Resend falhar: login e recuperação respondem 502 `email_nao_enviado`; o cadastro cria a conta mesmo assim (`email_enviado: false`) e a pessoa usa "reenviar".
 - Log de autenticação: eventos `codigo_email` e `confirmar_email`, método "Código por e-mail".
 
+## Ligar e desligar
+
+`CODIGO_EMAIL_ATIVO=false` desliga o código em tudo: login volta a ser senha + pergunta (empresa entra direto),
+o cadastro já nasce confirmado e o "esqueci a senha" volta para a pergunta de segurança
+(a API responde `status: "pergunta"` e o front mostra a pergunta). Quem tinha ficado sem confirmar o e-mail também entra.
+
+## Provedor de e-mail
+
+- **Brevo** (`BREVO_API_KEY`, tem prioridade): plano grátis de 300 e-mails/dia, envia para qualquer pessoa
+  com um remetente verificado em *Senders*. `EMAIL_REMETENTE` precisa ser esse remetente.
+- **Resend** (`RESEND_API_KEY`): sem domínio verificado só entrega para o e-mail dono da conta.
+
 ## Configuração (Railway → Variables)
 
 ```

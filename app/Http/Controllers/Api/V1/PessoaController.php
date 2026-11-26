@@ -19,7 +19,9 @@ class PessoaController extends Controller
     public function store(CadastrarPessoaRequest $request, PessoaService $pessoas, AuthService $auth): JsonResponse
     {
         $pessoa = $pessoas->cadastrar($request->validated());
-        $confirmacao = $auth->pedirConfirmacaoEmail($pessoa);
+        $confirmacao = \App\Services\CodigoEmailService::ativo()
+            ? $auth->pedirConfirmacaoEmail($pessoa)
+            : ['message' => 'Faça login para entrar.'];
 
         return response()->json([
             'message' => 'Cadastro realizado! ' . $confirmacao['message'],

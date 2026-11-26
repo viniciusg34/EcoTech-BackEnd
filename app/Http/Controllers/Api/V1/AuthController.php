@@ -13,6 +13,7 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\ReenviarCodigoRequest;
 use App\Http\Requests\RedefinirSenhaRequest;
 use App\Models\CodigoEmail;
+use App\Models\DesafioVerificacao;
 use App\Models\Empresa;
 use App\Models\Pessoa;
 use App\Services\AuthService;
@@ -145,6 +146,17 @@ class AuthController extends Controller
         $email = $request->input('email');
         $pessoa = Pessoa::query()->where('email', $email)->where('ativo', true)->first();
 
+        // Código por e-mail desligado: volta para a pergunta de segurança
+        if (! CodigoEmailService::ativo()) {
+            $pergunta = $this->doisFatores->criarParaRecuperacao($email, $pessoa);
+            if ($pessoa) {
+                $this->auth->registrarLog($pessoa, null, 'recuperacao', true);
+            }
+
+            return response()->json(['status' => 'pergunta'] + $this->doisFatores->dadosPergunta($pergunta)
+                + ['message' => 'Responda a pergunta de segurança para redefinir a senha.']);
+        }
+
         $desafio = $this->codigos->criarOuFalhar($pessoa, $email, 'recuperar_senha');
         if ($pessoa) {
             $this->auth->registrarLog($pessoa, null, 'recuperacao', true);
@@ -155,9 +167,18 @@ class AuthController extends Controller
         ]);
     }
 
-    // POST /auth/esqueci-senha/verificar  { desafio_id, codigo }  -> { token } (vale 10 minutos)
-    public function verificarRecuperacao(CodigoRequest $request): JsonResponse
+    /*
+     * POST /auth/esqueci-senha/verificar -> { token } (vale 10 minutos)
+     *   { desafio_id, codigo }    código por e-mail
+     *   { desafio_id, resposta }  pergunta de segurança (quando CODIGO_EMAIL_ATIVO=false)
+     */
+    public function verificarRecuperacao(Request $request): JsonResponse
     {
+        if (DesafioVerificacao::query()->where('uuid', (string) $request->input('desafio_id'))->exists()) {
+            return $this->verificarRecuperacaoPorPergunta(app(DesafioRequest::class));
+        }
+
+        $request = app(CodigoRequest::class);
         $desafio = $this->codigos->verificar(
             $request->input('desafio_id'),
             'recuperar_senha',
@@ -180,14 +201,38 @@ class AuthController extends Controller
         ]);
     }
 
+    private function verificarRecuperacaoPorPergunta(DesafioRequest $request): JsonResponse
+    {
+        $desafio = $this->doisFatores->verificar(
+            $request->input('desafio_id'),
+            'recuperar_senha',
+            $request->input('resposta'),
+            aoErrar: fn (DesafioVerificacao $d) => $d->pessoa && $this->auth->registrarLog(
+                $d->pessoa, null, 'recuperacao', false, TwoFactorService::PERGUNTAS[$d->pergunta], $d->tentativas
+            ),
+        );
+
+        $token = Str::random(64);
+        $desafio->forceFill([
+            'token_reset_hash'      => hash('sha256', $token),
+            'token_reset_expira_em' => now()->addMinutes(10),
+        ])->save();
+
+        return response()->json([
+            'token'     => $token,
+            'expira_em' => Formato::iso($desafio->token_reset_expira_em),
+            'message'   => 'Resposta certa! Agora crie a nova senha.',
+        ]);
+    }
+
     // POST /auth/redefinir-senha  { token, nova_senha }
     public function redefinirSenha(RedefinirSenhaRequest $request): JsonResponse
     {
         $resultado = DB::transaction(function () use ($request) {
-            $desafio = CodigoEmail::query()
-                ->where('token_reset_hash', hash('sha256', (string) $request->input('token')))
-                ->where('finalidade', 'recuperar_senha')
-                ->lockForUpdate()->first();
+            // O token pode ter vindo do código por e-mail ou da pergunta de segurança
+            $hash = hash('sha256', (string) $request->input('token'));
+            $desafio = CodigoEmail::query()->where('token_reset_hash', $hash)->where('finalidade', 'recuperar_senha')->lockForUpdate()->first()
+                ?? DesafioVerificacao::query()->where('token_reset_hash', $hash)->where('finalidade', 'recuperar_senha')->lockForUpdate()->first();
 
             if (! $desafio || $desafio->token_reset_usado_em || ! $desafio->token_reset_expira_em?->isFuture() || ! $desafio->pessoa) {
                 return null;

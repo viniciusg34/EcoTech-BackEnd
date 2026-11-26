@@ -29,7 +29,10 @@ return [
     'google_client_id' => env('GOOGLE_CLIENT_ID') ?: '547710554770-v2ofvchbeskjbm9d80pq12m3jncve5v7.apps.googleusercontent.com',
 
     /*
-     * E-mail (código de 6 dígitos), enviado pela API HTTP do Resend (https://resend.com).
+     * E-mail (código de 6 dígitos), enviado pela API HTTP do Brevo ou do Resend.
+     *   CODIGO_EMAIL_ATIVO  false = desliga o código por e-mail: login volta a ser
+     *                       senha + pergunta, o cadastro não pede confirmação e o
+     *                       "esqueci a senha" volta para a pergunta de segurança.
      *   RESEND_API_KEY   chave da conta (começa com re_). Sem ela, o e-mail NÃO é enviado:
      *                    o código vai só para o log do servidor (bom para rodar no seu PC).
      *   EMAIL_REMETENTE  quem envia. "onboarding@resend.dev" funciona sem configurar nada,
@@ -37,6 +40,10 @@ return [
      *                    para qualquer pessoa, verifique um domínio no Resend e use
      *                    algo como "EcoTech <nao-responda@seudominio.com>".
      */
+    'codigo_email_ativo' => filter_var(env('CODIGO_EMAIL_ATIVO', true), FILTER_VALIDATE_BOOL),
+    // Provedor: Brevo (BREVO_API_KEY) tem prioridade sobre Resend (RESEND_API_KEY).
+    // O Brevo grátis envia para qualquer pessoa com um remetente verificado (300/dia).
+    'brevo_key'       => env('BREVO_API_KEY'),
     'resend_key'      => env('RESEND_API_KEY'),
     'email_remetente' => env('EMAIL_REMETENTE', 'EcoTech <onboarding@resend.dev>'),
     // Código fixo (6 dígitos) das contas de exemplo do seed (e-mails terminados em ".example").

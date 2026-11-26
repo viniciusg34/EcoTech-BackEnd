@@ -41,6 +41,12 @@ class CodigoEmailService
     {
     }
 
+    // CODIGO_EMAIL_ATIVO=false desliga o código em todos os fluxos
+    public static function ativo(): bool
+    {
+        return (bool) config('ecotech.codigo_email_ativo', true);
+    }
+
     /*
      * Cria o desafio e manda o e-mail.
      * Sem conta (recuperação de senha com e-mail que não existe): cria um desafio "falso",
