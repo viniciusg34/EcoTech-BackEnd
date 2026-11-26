@@ -228,4 +228,17 @@ class CodigoEmailTest extends TestCase
             $this->postJson('/api/v1/auth/codigo', ['desafio_id' => $desafio, 'codigo' => '123456'])->assertStatus(422);
         }
     }
+
+    public function test_log_quebrado_no_servidor_nao_derruba_o_login_da_empresa_de_exemplo(): void
+    {
+        config(['ecotech.codigo_demo' => '123456']);
+        $this->criarEmpresa(['email' => 'contato@angra.ecotech.example']);
+
+        // Simula storage/logs sem permissão de escrita (o canal "stack" lança erro)
+        \Illuminate\Support\Facades\Log::shouldReceive('info')->andThrow(new \UnexpectedValueException('The stream or file could not be opened'));
+
+        $desafio = $this->postJson('/api/v1/auth/login', ['email' => 'contato@angra.ecotech.example', 'senha' => 'Empresa123'])
+            ->assertOk()->json('desafio_id');
+        $this->postJson('/api/v1/auth/codigo', ['desafio_id' => $desafio, 'codigo' => '123456'])->assertOk();
+    }
 }

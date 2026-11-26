@@ -44,28 +44,37 @@ class CriarMaster extends Command
             ?? new Pessoa();
         $novo = ! $master->exists;
 
-        // E-mail, login ou CPF do .env já usados por OUTRA conta: avisa e não altera nada
+        /*
+         * E-mail, login ou CPF do .env já usados por OUTRA conta: esse campo NÃO muda
+         * (o master fica com o valor que já tinha) e aparece um aviso. O resto,
+         * inclusive a senha do MASTER_PASSWORD, é atualizado normalmente.
+         */
         $outra = fn (string $campo, string $valor) => Pessoa::query()
             ->where($campo, $valor)->when($master->exists, fn ($q) => $q->whereKeyNot($master->id))->first();
-        $conflitos = array_filter([
-            'MASTER_EMAIL' => ($p = $outra('email', $email)) ? "o e-mail {$email} já é da conta id {$p->id} ({$p->perfil})" : null,
-            'MASTER_LOGIN' => ($p = $outra('login', $login)) ? "o login {$login} já é da conta id {$p->id} ({$p->perfil})" : null,
-            'MASTER_CPF'   => ($p = $outra('cpf', $cpf)) ? "o CPF {$cpf} já é da conta id {$p->id} ({$p->perfil})" : null,
-        ]);
-        if ($conflitos) {
-            foreach ($conflitos as $variavel => $motivo) {
-                $this->error("{$variavel}: {$motivo}.");
+        $avisos = [];
+        foreach (['email' => ['MASTER_EMAIL', $email], 'login' => ['MASTER_LOGIN', $login], 'cpf' => ['MASTER_CPF', $cpf]] as $campo => [$variavel, $valor]) {
+            if ($p = $outra($campo, $valor)) {
+                $avisos[$campo] = "{$variavel}: {$valor} já é da conta id {$p->id} ({$p->perfil}); o master continua com o valor antigo.";
             }
-            $this->error('Master NÃO foi ' . ($novo ? 'criado' : 'atualizado') . '. Troque essa variável ou libere o dado na outra conta.');
+        }
+        if ($avisos && $novo) {
+            // Sem master ainda e sem um dado livre: não dá para criar
+            foreach ($avisos as $aviso) {
+                $this->error($aviso);
+            }
+            $this->error('Master NÃO foi criado. Troque essa variável ou libere o dado na outra conta.');
 
             return self::FAILURE;
+        }
+        foreach ($avisos as $aviso) {
+            $this->warn($aviso);
         }
 
         $master->forceFill([
             'nome'              => $c['nome'],
-            'email'             => $email,
-            'login'             => $login,
-            'cpf'               => $cpf,
+            'email'             => isset($avisos['email']) ? $master->email : $email,
+            'login'             => isset($avisos['login']) ? $master->login : $login,
+            'cpf'               => isset($avisos['cpf']) ? $master->cpf : $cpf,
             'senha_hash'        => Hash::make($c['senha']),
             'nome_mae'          => $c['nome_mae'],
             'nascimento'        => $c['nascimento'],

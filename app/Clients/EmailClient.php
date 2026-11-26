@@ -3,7 +3,7 @@
 namespace App\Clients;
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Support\LogSeguro as Log;
 use Throwable;
 
 /*

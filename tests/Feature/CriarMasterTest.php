@@ -18,27 +18,29 @@ class CriarMasterTest extends TestCase
         return Pessoa::query()->where('perfil', 'master')->sole();
     }
 
-    public function test_email_do_master_ja_usado_por_conta_comum_nao_altera_nada_e_o_seed_continua(): void
+    public function test_email_do_master_ja_usado_por_conta_comum_mantem_o_email_mas_troca_a_senha(): void
     {
         $this->seed(DatabaseSeeder::class);                       // master com master@ecotech.com
         $antes = $this->master();
         $comum = $this->criarPessoa(['email' => 'souvinicius2004@gmail.com', 'cpf' => $this->cpfValido(123456789)]);
 
-        // Igual ao servidor: MASTER_EMAIL passou a ser o Gmail que já tem conta comum
-        config(['ecotech.master.email' => 'souvinicius2004@gmail.com']);
+        // Igual ao servidor: MASTER_EMAIL passou a ser o Gmail que já tem conta comum, e a senha mudou
+        config(['ecotech.master.email' => 'souvinicius2004@gmail.com', 'ecotech.master.senha' => 'NovaSenha9']);
 
         $this->artisan('ecotech:criar-master')
-            ->expectsOutputToContain('MASTER_EMAIL: o e-mail souvinicius2004@gmail.com já é da conta id ' . $comum->id)
-            ->assertFailed();
+            ->expectsOutputToContain('MASTER_EMAIL: souvinicius2004@gmail.com já é da conta id ' . $comum->id)
+            ->assertSuccessful();
 
-        // A conta comum continua comum, com a mesma senha e o mesmo CPF
+        // A conta comum continua comum, com a mesma senha
         $comum->refresh();
         $this->assertSame('comum', $comum->perfil);
         $this->assertTrue(Hash::check('abcdefgh', $comum->senha_hash));
-        $this->assertNotSame($antes->cpf, $comum->cpf);
-        // O master continua o mesmo
-        $this->assertSame($antes->id, $this->master()->id);
-        $this->assertSame('master@ecotech.com', $this->master()->email);
+        // O master é o mesmo, com o e-mail antigo e a senha NOVA
+        $master = $this->master();
+        $this->assertSame($antes->id, $master->id);
+        $this->assertSame('master@ecotech.com', $master->email);
+        $this->assertSame($antes->cpf, $master->cpf);
+        $this->assertTrue(Hash::check('NovaSenha9', $master->senha_hash));
 
         // E o seed inteiro não quebra (o deploy segue)
         $this->seed(DatabaseSeeder::class);
@@ -63,7 +65,7 @@ class CriarMasterTest extends TestCase
         $this->criarPessoa(['cpf' => '52998224725']);   // alguém se cadastrou com o CPF padrão do master
 
         $this->artisan('ecotech:criar-master')
-            ->expectsOutputToContain('MASTER_CPF: o CPF 52998224725 já é da conta id')
+            ->expectsOutputToContain('MASTER_CPF: 52998224725 já é da conta id')
             ->assertFailed();
         $this->assertSame(0, Pessoa::query()->where('perfil', 'master')->count());
     }

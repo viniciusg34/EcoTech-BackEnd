@@ -251,7 +251,7 @@ class CodigoEmailService
         $demo = preg_replace('/\D/', '', (string) config('ecotech.codigo_demo'));
         if ($this->ehDemo($email)) {
             $codigo = strlen($demo) === 6 ? $demo : str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-            \Illuminate\Support\Facades\Log::info("[conta de exemplo] código para {$email}: {$codigo}");
+            \App\Support\LogSeguro::info("[conta de exemplo] código para {$email}: {$codigo}");
 
             return $codigo;
         }
