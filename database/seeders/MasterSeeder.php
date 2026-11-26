@@ -14,7 +14,9 @@ class MasterSeeder extends Seeder
             $this->command?->warn('MASTER_PASSWORD não está no .env: o master não foi criado. Depois rode: php artisan ecotech:criar-master');
             return;
         }
-        Artisan::call('ecotech:criar-master');
-        $this->command?->info(trim(Artisan::output()));
+        // Se o master não puder ser criado/atualizado, só avisa: o resto do seed (e o deploy) continua
+        $codigo = Artisan::call('ecotech:criar-master');
+        $saida = trim(Artisan::output());
+        $codigo === 0 ? $this->command?->info($saida) : $this->command?->warn($saida);
     }
 }
