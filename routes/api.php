@@ -44,6 +44,9 @@ Route::get('/cep/{cep}', [PublicoController::class, 'cep']);
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/2fa', [AuthController::class, 'doisFatores'])->middleware('throttle:verificacao');
+    Route::post('/codigo', [AuthController::class, 'codigo'])->middleware('throttle:verificacao');
+    Route::post('/codigo/reenviar', [AuthController::class, 'reenviarCodigo'])->middleware('throttle:verificacao');
+    Route::post('/confirmar-email', [AuthController::class, 'confirmarEmail'])->middleware('throttle:verificacao');
     Route::post('/google', [AuthController::class, 'google'])->middleware('throttle:login');
     Route::post('/esqueci-senha', [AuthController::class, 'esqueciSenha'])->middleware('throttle:verificacao');
     Route::post('/esqueci-senha/verificar', [AuthController::class, 'verificarRecuperacao'])->middleware('throttle:verificacao');

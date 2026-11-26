@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\ApiException;
+use App\Models\CodigoEmail;
 use App\Models\DesafioVerificacao;
 use App\Models\Empresa;
 use App\Models\LogAutenticacao;
@@ -13,13 +14,14 @@ use Illuminate\Support\Facades\Hash;
 /*
  * LOGIN, TOKEN E LOG DE AUTENTICAÇÃO
  * ---------------------------------------------------------------
- * Pessoa (comum ou master): senha certa -> pergunta do 2FA -> token.
- * Empresa: senha certa -> token direto.
+ * Pessoa (comum ou master): senha -> pergunta de segurança -> código no e-mail -> token.
+ *   (se o e-mail do cadastro ainda não foi confirmado, a senha certa manda o código de confirmação)
+ * Empresa: senha -> código no e-mail -> token.
  * O token (Sanctum) vale 8 horas, ou 30 dias com "lembrar de mim".
  */
 class AuthService
 {
-    public function __construct(private TwoFactorService $doisFatores)
+    public function __construct(private TwoFactorService $doisFatores, private CodigoEmailService $codigos)
     {
     }
 
@@ -53,11 +55,20 @@ class AuthService
                 throw new ApiException(403, 'empresa_suspensa', 'Esta empresa está suspensa. Fale com o administrador do EcoTech.');
             }
             $this->registrarLog(null, $empresa, 'senha', true);
-            return $this->emitirToken($empresa, $lembrar);
+            $desafio = $this->codigos->criarOuFalhar($empresa, $empresa->email, 'login', $lembrar);
+
+            return $this->codigos->dados($desafio)
+                + ['message' => "Enviamos um código de 6 dígitos para {$this->codigos->mascarar($empresa->email)}."];
         }
 
         if (! $pessoa->ativo) {
             throw $this->credenciaisInvalidas();
+        }
+
+        // Cadastro com e-mail ainda não confirmado: manda (de novo) o código de confirmação
+        if (! $pessoa->email_confirmado) {
+            $this->registrarLog($pessoa, null, 'senha', true);
+            return $this->pedirConfirmacaoEmail($pessoa);
         }
 
         // Pessoa: a senha está certa, agora vem a pergunta de segurança
@@ -68,7 +79,7 @@ class AuthService
             + ['message' => 'Responda a pergunta de segurança para entrar.'];
     }
 
-    // Etapa 2 do login (pessoa): confere a resposta do 2FA e entrega o token
+    // Etapa 2 do login (pessoa): confere a resposta da pergunta e manda o código por e-mail
     public function concluirDoisFatores(string $desafioId, string $resposta, ?bool $lembrar): array
     {
         $desafio = $this->doisFatores->verificar(
@@ -83,7 +94,57 @@ class AuthService
             ),
         );
 
-        return $this->emitirToken($desafio->pessoa, $lembrar ?? $desafio->lembrar);
+        $pessoa = $desafio->pessoa;
+        $codigo = $this->codigos->criarOuFalhar($pessoa, $pessoa->email, 'login', $lembrar ?? $desafio->lembrar);
+
+        return $this->codigos->dados($codigo)
+            + ['message' => "Resposta certa! Agora digite o código que enviamos para {$this->codigos->mascarar($pessoa->email)}."];
+    }
+
+    // Última etapa do login (pessoa ou empresa): confere o código do e-mail e entrega o token
+    public function concluirCodigo(string $desafioId, string $codigo, ?bool $lembrar): array
+    {
+        $log = fn (CodigoEmail $d, bool $ok) => $this->registrarLog(
+            $d->pessoa, $d->pessoa ? null : $d->empresa, 'codigo_email', $ok, CodigoEmailService::METODO_LOG, $d->tentativas + ($ok ? 1 : 0)
+        );
+
+        $desafio = $this->codigos->verificar(
+            $desafioId,
+            'login',
+            $codigo,
+            aoErrar: fn (CodigoEmail $d) => $log($d, false),
+            aoAcertar: fn (CodigoEmail $d) => $log($d, true),
+        );
+
+        return $this->emitirToken($desafio->conta(), $lembrar ?? $desafio->lembrar);
+    }
+
+    // Cadastro novo (ou login de quem não confirmou): manda o código de confirmação do e-mail
+    public function pedirConfirmacaoEmail(Pessoa $pessoa): array
+    {
+        $desafio = $this->codigos->criar($pessoa, $pessoa->email, 'confirmar_email');
+        $email = $this->codigos->mascarar($pessoa->email);
+
+        return $this->codigos->dados($desafio) + ['message' => $desafio->emailEnviado
+            ? "Confirme seu e-mail: enviamos um código de 6 dígitos para {$email}."
+            : 'Não conseguimos enviar o código agora. Toque em "Reenviar código".'];
+    }
+
+    // POST /auth/confirmar-email: confere o código e marca o e-mail como confirmado
+    public function confirmarEmail(string $desafioId, string $codigo): Pessoa
+    {
+        $desafio = $this->codigos->verificar(
+            $desafioId,
+            'confirmar_email',
+            $codigo,
+            aoErrar: fn (CodigoEmail $d) => $this->registrarLog($d->pessoa, null, 'confirmar_email', false, CodigoEmailService::METODO_LOG, $d->tentativas),
+        );
+
+        $pessoa = $desafio->pessoa;
+        $pessoa->forceFill(['email_confirmado' => true])->save();
+        $this->registrarLog($pessoa, null, 'confirmar_email', true, CodigoEmailService::METODO_LOG, $desafio->tentativas + 1);
+
+        return $pessoa;
     }
 
     public function emitirToken(Pessoa|Empresa $conta, bool $lembrar = false): array

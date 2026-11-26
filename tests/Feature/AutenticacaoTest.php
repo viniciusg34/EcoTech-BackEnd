@@ -15,9 +15,9 @@ class AutenticacaoTest extends TestCase
         return ['nome_mae' => 'MARIA JOSE da silva', 'nascimento' => '12/05/1990', 'cep' => '20040-020'][$tipo];
     }
 
-    public function test_login_de_pessoa_pede_2fa_e_depois_entrega_o_token(): void
+    public function test_login_de_pessoa_pede_2fa_depois_codigo_por_email_e_entrega_o_token(): void
     {
-        $pessoa = $this->criarPessoa(['login' => 'anasil']);
+        $pessoa = $this->criarPessoa(['login' => 'anasil', 'email' => 'ana.silva@teste.com']);
 
         $login = $this->postJson('/api/v1/auth/login', ['login' => 'AnaSil', 'senha' => 'abcdefgh'])
             ->assertOk()
@@ -27,9 +27,21 @@ class AutenticacaoTest extends TestCase
 
         $this->assertContains($login->json('pergunta'), TwoFactorService::PERGUNTAS);
 
-        $this->postJson('/api/v1/auth/2fa', [
+        $codigo = $this->postJson('/api/v1/auth/2fa', [
             'desafio_id' => $login->json('desafio_id'),
             'resposta'   => $this->respostaCerta($login->json('pergunta_tipo')),
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'codigo_email')
+            ->assertJsonPath('finalidade', 'login')
+            ->assertJsonPath('email', 'an*******@teste.com')
+            ->assertJsonPath('tentativas_restantes', 5)
+            ->assertJsonMissingPath('token')
+            ->json();
+
+        $this->postJson('/api/v1/auth/codigo', [
+            'desafio_id' => $codigo['desafio_id'],
+            'codigo'     => $this->ultimoCodigo('ana.silva@teste.com'),
         ])
             ->assertOk()
             ->assertJsonPath('token_tipo', 'Bearer')
@@ -38,9 +50,15 @@ class AutenticacaoTest extends TestCase
             ->assertJsonPath('usuario.perfil', 'comum')
             ->assertJsonStructure(['token', 'expira_em', 'usuario' => ['id', 'nome', 'email', 'tipo', 'perfil', 'avatar', 'coins']]);
 
-        // O desafio não pode ser usado de novo
+        // Nem a pergunta nem o código podem ser usados de novo
         $this->postJson('/api/v1/auth/2fa', ['desafio_id' => $login->json('desafio_id'), 'resposta' => 'x'])
             ->assertStatus(410)->assertJsonPath('tentativas_restantes', 0);
+        $this->postJson('/api/v1/auth/codigo', ['desafio_id' => $codigo['desafio_id'], 'codigo' => $this->ultimoCodigo()])
+            ->assertStatus(410);
+
+        // O log mostra a pergunta e o código por e-mail
+        $this->assertDatabaseHas('log_autenticacao', ['pessoa_id' => $pessoa->id, 'evento' => '2fa', 'sucesso' => true]);
+        $this->assertDatabaseHas('log_autenticacao', ['pessoa_id' => $pessoa->id, 'evento' => 'codigo_email', 'sucesso' => true, 'metodo_2fa' => 'Código por e-mail']);
     }
 
     public function test_login_por_email(): void
@@ -105,11 +123,18 @@ class AutenticacaoTest extends TestCase
         $this->assertDatabaseHas('log_autenticacao', ['pessoa_id' => $pessoa->id, 'evento' => 'senha', 'sucesso' => false]);
     }
 
-    public function test_login_de_empresa_entrega_o_token_direto(): void
+    public function test_login_de_empresa_pede_codigo_por_email_e_entrega_o_token(): void
     {
         $empresa = $this->criarEmpresa(['email' => 'contato@recicla.com']);
 
-        $this->postJson('/api/v1/auth/login', ['email' => 'contato@recicla.com', 'senha' => 'Empresa123'])
+        $desafio = $this->postJson('/api/v1/auth/login', ['email' => 'contato@recicla.com', 'senha' => 'Empresa123'])
+            ->assertOk()
+            ->assertJsonPath('status', 'codigo_email')
+            ->assertJsonPath('finalidade', 'login')
+            ->assertJsonMissingPath('token')
+            ->json('desafio_id');
+
+        $this->postJson('/api/v1/auth/codigo', ['desafio_id' => $desafio, 'codigo' => $this->ultimoCodigo('contato@recicla.com')])
             ->assertOk()
             ->assertJsonPath('usuario.tipo', 'empresa')
             ->assertJsonPath('usuario.cnpj', $empresa->cnpj)

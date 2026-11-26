@@ -28,6 +28,18 @@ return [
     // ID público do OAuth (não é segredo). O GOOGLE_CLIENT_ID do .env, se preenchido, tem prioridade.
     'google_client_id' => env('GOOGLE_CLIENT_ID') ?: '547710554770-v2ofvchbeskjbm9d80pq12m3jncve5v7.apps.googleusercontent.com',
 
+    /*
+     * E-mail (código de 6 dígitos), enviado pela API HTTP do Resend (https://resend.com).
+     *   RESEND_API_KEY   chave da conta (começa com re_). Sem ela, o e-mail NÃO é enviado:
+     *                    o código vai só para o log do servidor (bom para rodar no seu PC).
+     *   EMAIL_REMETENTE  quem envia. "onboarding@resend.dev" funciona sem configurar nada,
+     *                    MAS o Resend só entrega para o e-mail dono da conta. Para mandar
+     *                    para qualquer pessoa, verifique um domínio no Resend e use
+     *                    algo como "EcoTech <nao-responda@seudominio.com>".
+     */
+    'resend_key'      => env('RESEND_API_KEY'),
+    'email_remetente' => env('EMAIL_REMETENTE', 'EcoTech <onboarding@resend.dev>'),
+
     // Pessoa master criada pelo seeder (a senha vem SÓ do .env)
     'master' => [
         'nome'       => env('MASTER_NOME', 'Administrador Master EcoTech'),

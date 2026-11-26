@@ -27,6 +27,7 @@ class Pessoa extends Authenticatable
         'nascimento'        => 'date',
         'saldo_coins'       => 'integer',
         'ativo'             => 'boolean',
+        'email_confirmado'  => 'boolean',
         'termos_aceitos_em' => 'datetime',
         'anonimizado_em'    => 'datetime',
         'preferencias'      => 'array',

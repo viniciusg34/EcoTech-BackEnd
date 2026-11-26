@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Api\V1;
 use App\Clients\GoogleTokenClient;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CodigoRequest;
 use App\Http\Requests\DesafioRequest;
 use App\Http\Requests\EsqueciSenhaRequest;
 use App\Http\Requests\GoogleRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\ReenviarCodigoRequest;
 use App\Http\Requests\RedefinirSenhaRequest;
-use App\Models\DesafioVerificacao;
+use App\Models\CodigoEmail;
 use App\Models\Empresa;
 use App\Models\Pessoa;
 use App\Services\AuthService;
+use App\Services\CodigoEmailService;
 use App\Services\TwoFactorService;
 use App\Support\Formato;
 use Illuminate\Http\JsonResponse;
@@ -23,15 +26,24 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /*
- * /auth/... — login em duas etapas, Google, recuperação de senha e logout.
+ * /auth/... — login (senha -> pergunta -> código no e-mail), Google, confirmação de e-mail,
+ * recuperação de senha (código no e-mail) e logout.
  */
 class AuthController extends Controller
 {
-    public function __construct(private AuthService $auth, private TwoFactorService $doisFatores)
-    {
+    public function __construct(
+        private AuthService $auth,
+        private TwoFactorService $doisFatores,
+        private CodigoEmailService $codigos,
+    ) {
     }
 
-    // POST /auth/login  -> pessoa: { status: "2fa", desafio_id, pergunta, pergunta_tipo } | empresa: { token, usuario }
+    /*
+     * POST /auth/login
+     *   pessoa  -> { status: "2fa", desafio_id, pergunta, pergunta_tipo }
+     *              ou { status: "codigo_email", finalidade: "confirmar_email", ... } se o e-mail não foi confirmado
+     *   empresa -> { status: "codigo_email", finalidade: "login", desafio_id, email, ... }
+     */
     public function login(LoginRequest $request): JsonResponse
     {
         return response()->json(
@@ -39,7 +51,7 @@ class AuthController extends Controller
         );
     }
 
-    // POST /auth/2fa  -> { token, usuario }
+    // POST /auth/2fa  { desafio_id, resposta }  -> { status: "codigo_email", finalidade: "login", desafio_id, ... }
     public function doisFatores(DesafioRequest $request): JsonResponse
     {
         $lembrar = $request->has('lembrar') && $request->input('lembrar') !== null ? $request->boolean('lembrar') : null;
@@ -47,6 +59,33 @@ class AuthController extends Controller
         return response()->json(
             $this->auth->concluirDoisFatores($request->input('desafio_id'), $request->input('resposta'), $lembrar)
         );
+    }
+
+    // POST /auth/codigo  { desafio_id, codigo }  -> { token, usuario }  (última etapa do login)
+    public function codigo(CodigoRequest $request): JsonResponse
+    {
+        $lembrar = $request->has('lembrar') && $request->input('lembrar') !== null ? $request->boolean('lembrar') : null;
+
+        return response()->json(
+            $this->auth->concluirCodigo($request->input('desafio_id'), $request->codigo(), $lembrar)
+        );
+    }
+
+    // POST /auth/codigo/reenviar  { desafio_id }  -> mesmos dados, com prazos novos (serve para as 3 finalidades)
+    public function reenviarCodigo(ReenviarCodigoRequest $request): JsonResponse
+    {
+        $desafio = $this->codigos->reenviar($request->input('desafio_id'));
+
+        return response()->json($this->codigos->dados($desafio)
+            + ['message' => "Enviamos um código novo para {$this->codigos->mascarar($desafio->email)}."]);
+    }
+
+    // POST /auth/confirmar-email  { desafio_id, codigo }  -> { message }  (depois vai para o login)
+    public function confirmarEmail(CodigoRequest $request): JsonResponse
+    {
+        $this->auth->confirmarEmail($request->input('desafio_id'), $request->codigo());
+
+        return response()->json(['message' => 'E-mail confirmado! Agora faça login para entrar.']);
     }
 
     /*
@@ -77,6 +116,11 @@ class AuthController extends Controller
             ]);
         }
 
+        // O Google já garante que o e-mail é dessa pessoa (email_verified)
+        if (! $pessoa->email_confirmado) {
+            $pessoa->forceFill(['email_confirmado' => true])->save();
+        }
+
         $desafio = $this->doisFatores->criarParaLogin($pessoa, $request->boolean('lembrar'));
         $this->auth->registrarLog($pessoa, null, 'google', true);
 
@@ -92,33 +136,34 @@ class AuthController extends Controller
     }
 
     /*
-     * POST /auth/esqueci-senha  { email }
-     * SEMPRE responde com um desafio (mesmo se o e-mail não existir): não revela quem tem conta.
+     * POST /auth/esqueci-senha  { email }  -> { status: "codigo_email", finalidade: "recuperar_senha", desafio_id, email, ... }
+     * SEMPRE responde igual (mesmo se o e-mail não existir): não revela quem tem conta.
+     * Só manda o e-mail de verdade quando a conta existe.
      */
     public function esqueciSenha(EsqueciSenhaRequest $request): JsonResponse
     {
         $email = $request->input('email');
         $pessoa = Pessoa::query()->where('email', $email)->where('ativo', true)->first();
 
-        $desafio = $this->doisFatores->criarParaRecuperacao($email, $pessoa);
+        $desafio = $this->codigos->criarOuFalhar($pessoa, $email, 'recuperar_senha');
         if ($pessoa) {
             $this->auth->registrarLog($pessoa, null, 'recuperacao', true);
         }
 
-        return response()->json($this->doisFatores->dadosPergunta($desafio) + [
-            'message' => 'Responda a pergunta de segurança para redefinir a senha.',
+        return response()->json($this->codigos->dados($desafio) + [
+            'message' => 'Se este e-mail tiver conta, você vai receber um código de 6 dígitos.',
         ]);
     }
 
-    // POST /auth/esqueci-senha/verificar  { desafio_id, resposta }  -> { token } (vale 10 minutos)
-    public function verificarRecuperacao(DesafioRequest $request): JsonResponse
+    // POST /auth/esqueci-senha/verificar  { desafio_id, codigo }  -> { token } (vale 10 minutos)
+    public function verificarRecuperacao(CodigoRequest $request): JsonResponse
     {
-        $desafio = $this->doisFatores->verificar(
+        $desafio = $this->codigos->verificar(
             $request->input('desafio_id'),
             'recuperar_senha',
-            $request->input('resposta'),
-            aoErrar: fn (DesafioVerificacao $d) => $d->pessoa && $this->auth->registrarLog(
-                $d->pessoa, null, 'recuperacao', false, TwoFactorService::PERGUNTAS[$d->pergunta], $d->tentativas
+            $request->codigo(),
+            aoErrar: fn (CodigoEmail $d) => $d->pessoa && $this->auth->registrarLog(
+                $d->pessoa, null, 'recuperacao', false, CodigoEmailService::METODO_LOG, $d->tentativas
             ),
         );
 
@@ -131,7 +176,7 @@ class AuthController extends Controller
         return response()->json([
             'token'     => $token,
             'expira_em' => Formato::iso($desafio->token_reset_expira_em),
-            'message'   => 'Resposta certa! Agora crie a nova senha.',
+            'message'   => 'Código certo! Agora crie a nova senha.',
         ]);
     }
 
@@ -139,7 +184,7 @@ class AuthController extends Controller
     public function redefinirSenha(RedefinirSenhaRequest $request): JsonResponse
     {
         $resultado = DB::transaction(function () use ($request) {
-            $desafio = DesafioVerificacao::query()
+            $desafio = CodigoEmail::query()
                 ->where('token_reset_hash', hash('sha256', (string) $request->input('token')))
                 ->where('finalidade', 'recuperar_senha')
                 ->lockForUpdate()->first();

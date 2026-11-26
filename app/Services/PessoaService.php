@@ -30,6 +30,7 @@ class PessoaService
         $pessoa->forceFill([
             'nome'              => $dados['nome'],
             'email'             => $dados['email'],
+            'email_confirmado'  => false, // vira true quando a pessoa digitar o código do e-mail
             'cpf'               => $dados['cpf'],
             'login'             => $dados['login'],
             'senha_hash'        => Hash::make($dados['senha']),

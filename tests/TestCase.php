@@ -48,9 +48,36 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
         Configuracao::limparMemoria();
-        // Nenhum teste chama APIs de verdade (Open Food Facts, ViaCEP, Google)
+        // Nenhum teste chama APIs de verdade (Open Food Facts, ViaCEP, Google, Resend)
         Http::preventStrayRequests();
+
+        // E-mails do código de 6 dígitos: o "Resend" é falso e guarda o que seria enviado
+        config(['ecotech.resend_key' => 're_teste']);
+        Http::fake(['api.resend.com/*' => fn () => Http::response(...$this->respostaResend)]);
     }
+
+    // Último código de 6 dígitos "enviado" por e-mail (para este endereço, se informado)
+    protected function ultimoCodigo(?string $para = null): string
+    {
+        $email = collect(Http::recorded())
+            ->map(fn (array $par) => $par[0])
+            ->filter(fn ($r) => str_contains($r->url(), 'api.resend.com')
+                && ($para === null || in_array(mb_strtolower($para), $r['to'], true)))
+            ->last();
+
+        $this->assertNotNull($email, 'Nenhum e-mail com código foi enviado' . ($para ? " para {$para}" : '') . '.');
+        $this->assertSame(1, preg_match('/Código: (\d{6})/', $email['text'], $m));
+
+        return $m[1];
+    }
+
+    protected function emailsEnviados(): int
+    {
+        return collect(Http::recorded())->filter(fn (array $par) => str_contains($par[0]->url(), 'api.resend.com'))->count();
+    }
+
+    // O que o Resend falso responde (troque num teste para simular falha: [['message' => 'erro'], 500])
+    protected array $respostaResend = [['id' => 'email-teste'], 200];
 
     protected function criarPessoa(array $dados = []): Pessoa
     {
