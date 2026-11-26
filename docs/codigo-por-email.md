@@ -60,3 +60,19 @@ Com `onboarding@resend.dev` o Resend só entrega para o e-mail dono da conta do 
 Para enviar para qualquer pessoa, verifique um domínio em resend.com/domains e use um remetente desse domínio.
 
 Rode a migration no servidor: `php artisan migrate --force`.
+
+## Contas de exemplo (seed)
+
+As contas do seed usam e-mails `@....ecotech.example` (domínio reservado, que nunca recebe e-mail).
+Para elas nenhum e-mail é enviado e o código é o `CODIGO_DEMO` do `.env` (ex.: `123456`).
+Contas reais **nunca** aceitam o `CODIGO_DEMO`.
+
+Popular o banco:
+
+```
+php artisan migrate --force
+php artisan db:seed --force                          # 9 empresas, 34 Ecopontos, recompensas, master
+php artisan db:seed --class=DemoSeeder --force       # 15 pessoas com 6 meses de histórico
+```
+
+No servidor (`APP_ENV=production`), o DemoSeeder só roda com `SEED_DEMO_PRODUCAO=true`.

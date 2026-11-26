@@ -39,6 +39,9 @@ return [
      */
     'resend_key'      => env('RESEND_API_KEY'),
     'email_remetente' => env('EMAIL_REMETENTE', 'EcoTech <onboarding@resend.dev>'),
+    // Código fixo (6 dígitos) das contas de exemplo do seed (e-mails terminados em ".example").
+    // Contas reais NUNCA aceitam este código. Vazio = código aleatório, só no log.
+    'codigo_demo'     => env('CODIGO_DEMO'),
 
     // Pessoa master criada pelo seeder (a senha vem SÓ do .env)
     'master' => [

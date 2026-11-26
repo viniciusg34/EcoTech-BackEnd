@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RecompensaSeeder::class,
             ProdutoSeeder::class,
             EmpresaEcopontoSeeder::class,
+            EmpresasExemploSeeder::class,
             MasterSeeder::class,
         ]);
     }

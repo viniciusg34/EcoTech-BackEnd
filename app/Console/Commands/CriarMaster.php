@@ -34,7 +34,10 @@ class CriarMaster extends Command
             return self::FAILURE;
         }
 
-        $master = Pessoa::query()->where('email', mb_strtolower($c['email']))->first() ?? new Pessoa();
+        // Procura pelo e-mail OU pelo login: assim, trocar MASTER_EMAIL atualiza o master que já existe
+        $master = Pessoa::query()->where('email', mb_strtolower($c['email']))->first()
+            ?? Pessoa::query()->where('login', mb_strtolower($c['login']))->where('perfil', 'master')->first()
+            ?? new Pessoa();
         $novo = ! $master->exists;
 
         $master->forceFill([

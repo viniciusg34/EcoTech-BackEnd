@@ -28,18 +28,22 @@ use Illuminate\Support\Facades\Hash;
  * Pergunta de segurança: nome da mãe "Maria José da Silva", nascimento
  * 12/05/1990 e CEP 20040-020 (as três pessoas).
  * Pode rodar de novo: quem já existe é pulado.
+ * Também cria as empresas extras (EmpresasExemploSeeder).
+ * Os e-mails ".example" não recebem e-mail: no login, o código é o CODIGO_DEMO do .env.
  */
 class DemoSeeder extends Seeder
 {
     public function run(SessaoEcopontoService $sessoes, CheckinService $checkins, ColetaService $coletas, ResgateService $resgates): void
     {
-        if (app()->isProduction()) {
-            $this->command?->warn('DemoSeeder não roda em produção.');
+        // No servidor do projeto (produção), só roda com SEED_DEMO_PRODUCAO=true
+        if (app()->isProduction() && ! filter_var(env('SEED_DEMO_PRODUCAO', false), FILTER_VALIDATE_BOOL)) {
+            $this->command?->warn('DemoSeeder não roda em produção. Para liberar: SEED_DEMO_PRODUCAO=true');
             return;
         }
         if (Ecoponto::query()->count() === 0) {
             $this->call(DatabaseSeeder::class);
         }
+        $this->call(EmpresasExemploSeeder::class);
 
         mt_srand(2026);
         Carbon::setTestNow();

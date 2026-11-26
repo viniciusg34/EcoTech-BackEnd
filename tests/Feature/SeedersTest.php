@@ -19,8 +19,9 @@ class SeedersTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         $this->seed(DatabaseSeeder::class);
 
-        $this->assertSame(22, Ecoponto::query()->count());
-        $this->assertSame(3, Empresa::query()->count());
+        $this->assertSame(34, Ecoponto::query()->count());   // 22 do mapa + 12 das empresas extras
+        $this->assertSame(9, Empresa::query()->count());     // 3 + 6 de exemplo (uma suspensa)
+        $this->assertSame(1, Empresa::query()->where('status', 'suspensa')->count());
         $this->assertSame(11, Recompensa::query()->count());
         $this->assertSame(1, Pessoa::query()->where('perfil', 'master')->count());
         $this->assertSame('master', Pessoa::query()->where('perfil', 'master')->value('login'));

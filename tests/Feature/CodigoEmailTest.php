@@ -203,4 +203,29 @@ class CodigoEmailTest extends TestCase
         $this->postJson('/api/v1/auth/google', ['credential' => 'token'])->assertOk()->assertJsonPath('status', '2fa');
         $this->assertTrue($pessoa->fresh()->email_confirmado);
     }
+
+    public function test_conta_de_exemplo_usa_o_codigo_demo_e_nao_envia_email(): void
+    {
+        config(['ecotech.codigo_demo' => '123456']);
+        $this->criarEmpresa(['email' => 'contato@angra.ecotech.example']);
+        $antes = $this->emailsEnviados();
+
+        $desafio = $this->postJson('/api/v1/auth/login', ['email' => 'contato@angra.ecotech.example', 'senha' => 'Empresa123'])
+            ->assertOk()->assertJsonPath('status', 'codigo_email')->json('desafio_id');
+
+        $this->assertSame($antes, $this->emailsEnviados());
+        $this->postJson('/api/v1/auth/codigo', ['desafio_id' => $desafio, 'codigo' => '123456'])
+            ->assertOk()->assertJsonPath('usuario.tipo', 'empresa');
+    }
+
+    public function test_conta_real_nunca_aceita_o_codigo_demo(): void
+    {
+        config(['ecotech.codigo_demo' => '123456']);
+        $this->criarEmpresa(['email' => 'contato@recicla.com']);
+        $desafio = $this->postJson('/api/v1/auth/login', ['email' => 'contato@recicla.com', 'senha' => 'Empresa123'])->json('desafio_id');
+
+        if ($this->ultimoCodigo('contato@recicla.com') !== '123456') {
+            $this->postJson('/api/v1/auth/codigo', ['desafio_id' => $desafio, 'codigo' => '123456'])->assertStatus(422);
+        }
+    }
 }

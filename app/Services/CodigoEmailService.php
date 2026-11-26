@@ -50,7 +50,7 @@ class CodigoEmailService
      */
     public function criar(Pessoa|Empresa|null $conta, string $email, string $finalidade, bool $lembrar = false): CodigoEmail
     {
-        $codigo = $this->gerarCodigo();
+        $codigo = $this->gerarCodigo($email);
 
         $desafio = CodigoEmail::create([
             'uuid'           => (string) Str::uuid(),
@@ -67,7 +67,7 @@ class CodigoEmailService
             'expira_em'      => now()->addMinutes(self::MINUTOS_VALIDADE),
         ]);
 
-        $desafio->emailEnviado = $conta ? $this->enviarEmail($desafio, $conta, $codigo) : true;
+        $desafio->emailEnviado = ($conta && ! $this->ehDemo($email)) ? $this->enviarEmail($desafio, $conta, $codigo) : true;
 
         return $desafio;
     }
@@ -171,9 +171,7 @@ class CodigoEmailService
      */
     public function reenviar(string $uuid): CodigoEmail
     {
-        $novoCodigo = $this->gerarCodigo();
-
-        $desafio = DB::transaction(function () use ($uuid, $novoCodigo) {
+        $desafio = DB::transaction(function () use ($uuid, &$novoCodigo) {
             $desafio = CodigoEmail::query()->where('uuid', $uuid)->lockForUpdate()->first();
 
             if (! $desafio || $desafio->resolvido_em) {
@@ -191,6 +189,7 @@ class CodigoEmailService
                 throw new ApiException(429, 'aguarde_reenvio', "Aguarde {$espera} segundos para pedir outro código.", [], ['aguarde_segundos' => $espera]);
             }
 
+            $novoCodigo = $this->gerarCodigo($desafio->email);
             $desafio->forceFill([
                 'codigo_hash' => $this->hash($novoCodigo),
                 'reenvios'    => $desafio->reenvios + 1,
@@ -202,7 +201,7 @@ class CodigoEmailService
         });
 
         $conta = $desafio->conta();
-        if ($conta && ! $this->enviarEmail($desafio, $conta, $novoCodigo)) {
+        if ($conta && ! $this->ehDemo($desafio->email) && ! $this->enviarEmail($desafio, $conta, $novoCodigo)) {
             throw $this->erroEnvio();
         }
 
@@ -237,8 +236,26 @@ class CodigoEmailService
         return $this->email->enviar($desafio->email, $assunto, $html, $texto);
     }
 
-    private function gerarCodigo(): string
+    /*
+     * Contas de exemplo (seed) usam e-mails "@....example", domínio reservado que nunca
+     * recebe e-mail. Para elas não enviamos nada: o código é o CODIGO_DEMO do .env.
+     * Sem CODIGO_DEMO, o código é aleatório e só aparece no log do servidor.
+     */
+    public function ehDemo(string $email): bool
     {
+        return str_ends_with(mb_strtolower(trim($email)), '.example');
+    }
+
+    private function gerarCodigo(string $email): string
+    {
+        $demo = preg_replace('/\D/', '', (string) config('ecotech.codigo_demo'));
+        if ($this->ehDemo($email)) {
+            $codigo = strlen($demo) === 6 ? $demo : str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            \Illuminate\Support\Facades\Log::info("[conta de exemplo] código para {$email}: {$codigo}");
+
+            return $codigo;
+        }
+
         return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     }
 
