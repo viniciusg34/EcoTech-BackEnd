@@ -19,6 +19,9 @@ class EmailClient
 {
     public function enviar(string $para, string $assunto, string $html, string $texto): bool
     {
+        if (config('ecotech.apps_script_url')) {
+            return $this->appsScript($para, $assunto, $html, $texto);
+        }
         if (config('ecotech.brevo_key')) {
             return $this->brevo($para, $assunto, $html, $texto);
         }
@@ -47,6 +50,35 @@ class EmailClient
         if (! $resposta->successful()) {
             // O Resend explica o motivo no corpo (ex.: domínio não verificado)
             Log::error('Resend recusou o e-mail.', ['para' => $para, 'status' => $resposta->status(), 'resposta' => $resposta->json()]);
+            return false;
+        }
+
+        return true;
+    }
+
+    /*
+     * Google Apps Script: um script no SEU Google que envia pelo seu Gmail (MailApp).
+     * O backend faz um POST (HTTPS) para a URL do "App da Web" com um segredo combinado.
+     * O código do script está em docs/apps-script-email.gs.
+     */
+    private function appsScript(string $para, string $assunto, string $html, string $texto): bool
+    {
+        try {
+            $resposta = Http::timeout(15)->connectTimeout(5)->acceptJson()
+                ->post(config('ecotech.apps_script_url'), [
+                    'segredo' => (string) config('ecotech.apps_script_segredo'),
+                    'para'    => $para,
+                    'assunto' => $assunto,
+                    'html'    => $html,
+                    'texto'   => $texto,
+                ]);
+        } catch (Throwable $e) {
+            Log::error('Apps Script: falha de conexão ao enviar e-mail.', ['para' => $para, 'erro' => $e->getMessage()]);
+            return false;
+        }
+
+        if (! $resposta->successful() || $resposta->json('ok') !== true) {
+            Log::error('Apps Script recusou o e-mail.', ['para' => $para, 'status' => $resposta->status(), 'resposta' => mb_substr($resposta->body(), 0, 500)]);
             return false;
         }
 

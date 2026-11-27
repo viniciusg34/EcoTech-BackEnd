@@ -41,7 +41,11 @@ return [
      *                    algo como "EcoTech <nao-responda@seudominio.com>".
      */
     'codigo_email_ativo' => filter_var(env('CODIGO_EMAIL_ATIVO', true), FILTER_VALIDATE_BOOL),
-    // Provedor: Brevo (BREVO_API_KEY) tem prioridade sobre Resend (RESEND_API_KEY).
+    // Provedor (nesta ordem): Google Apps Script, Brevo, Resend.
+    // Apps Script = envia pelo seu Gmail, sem domínio (ver docs/apps-script-email.gs).
+    'apps_script_url'     => env('APPS_SCRIPT_URL'),
+    'apps_script_segredo' => env('APPS_SCRIPT_SEGREDO'),
+    // Brevo (BREVO_API_KEY) tem prioridade sobre Resend (RESEND_API_KEY).
     // O Brevo grátis envia para qualquer pessoa com um remetente verificado (300/dia).
     'brevo_key'       => env('BREVO_API_KEY'),
     'resend_key'      => env('RESEND_API_KEY'),

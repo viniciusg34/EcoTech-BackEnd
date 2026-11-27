@@ -134,4 +134,34 @@ class CorrecoesLoginTest extends TestCase
             && $r['to'] === [['email' => 'pessoa' . substr($r['to'][0]['email'], 6)]]
             && preg_match('/Código: \d{6}/', $r['textContent']));
     }
+
+    public function test_apps_script_envia_com_o_segredo_e_tem_prioridade(): void
+    {
+        config([
+            'ecotech.apps_script_url' => 'https://script.google.com/macros/s/teste/exec',
+            'ecotech.apps_script_segredo' => 'segredo-teste',
+            'ecotech.brevo_key' => 'xkeysib-teste',
+        ]);
+        Http::fake(['script.google.com/*' => Http::response(['ok' => true, 'restantes_hoje' => 99])]);
+
+        $this->loginAtePergunta('cep');
+        $d = $this->postJson('/api/v1/auth/login', ['login' => 'anasil', 'senha' => 'abcdefgh'])->json();
+        $this->postJson('/api/v1/auth/2fa', ['desafio_id' => $d['desafio_id'], 'resposta' => '20040020'])
+            ->assertOk()->assertJsonPath('status', 'codigo_email');
+
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'script.google.com')
+            && $r['segredo'] === 'segredo-teste'
+            && preg_match('/Código: \d{6}/', $r['texto']));
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'api.brevo.com'));
+    }
+
+    public function test_apps_script_com_erro_responde_502(): void
+    {
+        config(['ecotech.apps_script_url' => 'https://script.google.com/macros/s/teste/exec']);
+        Http::fake(['script.google.com/*' => Http::response(['ok' => false, 'erro' => 'segredo_invalido'])]);
+
+        $d = $this->loginAtePergunta('cep');
+        $this->postJson('/api/v1/auth/2fa', ['desafio_id' => $d['desafio_id'], 'resposta' => '20040020'])
+            ->assertStatus(502)->assertJsonPath('erro', 'email_nao_enviado');
+    }
 }
