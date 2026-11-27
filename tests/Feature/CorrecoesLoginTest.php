@@ -164,4 +164,26 @@ class CorrecoesLoginTest extends TestCase
         $this->postJson('/api/v1/auth/2fa', ['desafio_id' => $d['desafio_id'], 'resposta' => '20040020'])
             ->assertStatus(502)->assertJsonPath('erro', 'email_nao_enviado');
     }
+
+    public function test_master_entra_so_com_login_e_senha_sem_2fa(): void
+    {
+        $master = $this->criarMaster();
+        $enviados = $this->emailsEnviados();
+
+        $this->postJson('/api/v1/auth/login', ['login' => $master->login, 'senha' => 'abcdefgh'])
+            ->assertOk()
+            ->assertJsonStructure(['token', 'usuario'])
+            ->assertJsonPath('usuario.perfil', 'master')
+            ->assertJsonMissingPath('desafio_id');
+
+        $this->assertSame($enviados, $this->emailsEnviados());
+        $this->assertDatabaseHas('log_autenticacao', ['pessoa_id' => $master->id, 'evento' => 'senha', 'sucesso' => true]);
+    }
+
+    public function test_pessoa_comum_continua_com_2fa(): void
+    {
+        $this->criarPessoa(['login' => 'anasil']);
+        $this->postJson('/api/v1/auth/login', ['login' => 'anasil', 'senha' => 'abcdefgh'])
+            ->assertOk()->assertJsonPath('status', '2fa')->assertJsonMissingPath('token');
+    }
 }

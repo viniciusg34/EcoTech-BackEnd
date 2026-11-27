@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Hash;
 /*
  * LOGIN, TOKEN E LOG DE AUTENTICAÇÃO
  * ---------------------------------------------------------------
- * Pessoa (comum ou master): senha -> pergunta de segurança -> código no e-mail -> token.
+ * Pessoa comum: senha -> pergunta de segurança -> código no e-mail -> token.
+ * Master: senha -> token direto (sem 2FA).
  *   (se o e-mail do cadastro ainda não foi confirmado, a senha certa manda o código de confirmação)
  * Empresa: senha -> código no e-mail -> token.
  * O token (Sanctum) vale 8 horas, ou 30 dias com "lembrar de mim".
@@ -66,6 +67,12 @@ class AuthService
 
         if (! $pessoa->ativo) {
             throw $this->credenciaisInvalidas();
+        }
+
+        // Master (administrador) entra só com login e senha: sem pergunta e sem código
+        if ($pessoa->ehMaster()) {
+            $this->registrarLog($pessoa, null, 'senha', true);
+            return $this->emitirToken($pessoa, $lembrar);
         }
 
         // Cadastro com e-mail ainda não confirmado: manda (de novo) o código de confirmação

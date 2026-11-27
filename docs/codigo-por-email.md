@@ -5,7 +5,8 @@
 | Situação | Antes | Agora |
 |---|---|---|
 | Cadastro de pessoa | conta ativa na hora | `POST /pessoas` cria a conta e manda o código; a pessoa confirma em `POST /auth/confirmar-email` e depois faz login |
-| Login de pessoa | senha → pergunta → token | senha → pergunta (exigida pelo enunciado) → **código** → token |
+| Login de pessoa comum | senha → pergunta → token | senha → pergunta (exigida pelo enunciado) → **código** → token |
+| Login do master | senha → pergunta → token | senha → token (**sem 2FA**) |
 | Login de empresa | senha → token | senha → **código** → token |
 | Login com Google | Google → pergunta → token | Google → pergunta → **código** → token (o Google também marca o e-mail como confirmado) |
 | Esqueci a senha | pergunta de segurança | **código** no e-mail |

@@ -26,7 +26,7 @@ class SeedersTest extends TestCase
         $this->assertSame(1, Pessoa::query()->where('perfil', 'master')->count());
         $this->assertSame('master', Pessoa::query()->where('perfil', 'master')->value('login'));
         // O login é guardado em minúsculas; digitar MASTER também funciona
-        $this->postJson('/api/v1/auth/login', ['login' => 'MASTER', 'senha' => 'Master123'])->assertOk()->assertJsonPath('status', '2fa');
+        $this->postJson('/api/v1/auth/login', ['login' => 'MASTER', 'senha' => 'Master123'])->assertOk()->assertJsonPath('usuario.perfil', 'master')->assertJsonStructure(['token']); // master entra sem 2FA
     }
 
     public function test_dados_de_demonstracao_com_livro_razao_consistente(): void
